@@ -1,0 +1,14 @@
+.idea
+.git
+.github
+.ci
+assets
+.dockerignore
+.env
+.env.default
+.gitignore
+.golangci.yml
+db.sqlite3
+docker-compose.yml
+Makefile
+README.md
