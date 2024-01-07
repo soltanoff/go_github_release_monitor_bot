@@ -69,6 +69,11 @@ func GetLatestTagFromTagURI(
 		return releaseInfo, fmt.Errorf("latest tag for tag uri read body failed: %w", err)
 	}
 
+	if len(tagInfoList) == 0 {
+		logs.LogWarn("Latest tag for tag uri request is empty")
+		return releaseInfo, nil
+	}
+
 	sort.Slice(tagInfoList, func(i, j int) bool {
 		return tagInfoList[i].Ref > tagInfoList[j].Ref
 	})
