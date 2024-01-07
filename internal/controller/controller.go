@@ -15,7 +15,7 @@ import (
 )
 
 type BotController struct {
-	bot         bot.Bot
+	bot         *bot.Bot
 	commandList []string
 }
 
@@ -28,7 +28,7 @@ func New(telegramAPIKey string) BotController {
 		panic(err)
 	}
 
-	bc := BotController{bot: *b}
+	bc := BotController{bot: b}
 	bc.registerDefaultHandler()
 	bc.registerHandler(
 		"/start",
@@ -109,7 +109,7 @@ func (bc *BotController) getCommandList() string {
 }
 
 func (bc *BotController) registerDefaultHandler() {
-	bot.WithDefaultHandler(bc.handlerWrapper(bc.defaultHandler, true))(&bc.bot)
+	bot.WithDefaultHandler(bc.handlerWrapper(bc.defaultHandler, true))(bc.bot)
 }
 
 func (bc *BotController) registerHandler(
