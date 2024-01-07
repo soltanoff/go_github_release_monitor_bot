@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  github_release_monitor_bot:
+    build:
+      context: .
+      dockerfile: .ci/Dockerfile
+    container_name: release_monitor
+    environment:
+      - TELEGRAM_API_KEY=$TELEGRAM_API_KEY
+      - SURVEY_PERIOD=$SURVEY_PERIOD
+      - FETCHING_STEP_PERIOD=$FETCHING_STEP_PERIOD
+    env_file:
+      - .env
+    volumes:
+      - .env.default:/app/.env
