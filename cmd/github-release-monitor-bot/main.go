@@ -19,7 +19,12 @@ func main() {
 	defer cancel()
 
 	config.LoadConfigFromEnv()
-	repo.AutoMigrate()
+
+	db := repo.InitDBConnection()
+	repo.AutoMigrate(db)
+
+	//nolint:golint,revive,staticcheck
+	ctx = context.WithValue(ctx, "db", db.WithContext(ctx))
 
 	bc := controller.New(os.Getenv("TELEGRAM_API_KEY"))
 	bc.Start(ctx, &wg)

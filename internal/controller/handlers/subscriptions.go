@@ -13,8 +13,12 @@ import (
 
 var errorMessage = "Some error caused, please try latter :("
 
-func MySubscriptionsHandler(ctx context.Context, _ *models.Update, user *entities.User) string {
-	selectedRepository := repo.GetAllUserSubscriptions(ctx, user)
+func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
+	selectedRepository, err := repo.GetAllUserSubscriptions(ctx, user)
+	if err != nil {
+		logs.LogBotErrorMessage(update, err)
+		return errorMessage
+	}
 
 	var answer strings.Builder
 
