@@ -47,13 +47,18 @@ func GetOrCreateUser(
 
 	defer tx.Rollback()
 
-	query := tx.First(&user, "external_id = ?", userExternalID)
-	if query.Error != nil && errors.Is(query.Error, gorm.ErrRecordNotFound) {
-		user = entities.User{ExternalID: userExternalID}
-		if err := tx.Create(&user).Error; err != nil {
-			logs.LogError("User `%d` creation failure: %s", userExternalID, err)
-			return user, err
+	if err := tx.First(&user, "external_id = ?", userExternalID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			user = entities.User{ExternalID: userExternalID}
+			if err := tx.Create(&user).Error; err != nil {
+				logs.LogError("User `%d` creation failure: %s", userExternalID, err)
+				return user, err
+			}
 		}
+
+		logs.LogError("User `%d` unexpected error: %s", userExternalID, err)
+
+		return user, err
 	}
 
 	return user, tx.Commit().Error
@@ -106,28 +111,40 @@ func AddUserSubscription(
 
 		query := tx.Where("url = ?", repositoryURL)
 
-		if err := query.First(&repository).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			repository = entities.Repository{URL: repositoryURL, ShortName: uriMatches[1]}
-			if err := tx.Create(&repository).Error; err != nil {
-				logs.LogError("Repository `%s` creation failure: %s", repositoryURL, err)
-				return err
+		if err := query.First(&repository).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				repository = entities.Repository{URL: repositoryURL, ShortName: uriMatches[1]}
+				if err := tx.Create(&repository).Error; err != nil {
+					logs.LogError("Repository `%s` creation failure: %s", repositoryURL, err)
+					return err
+				}
+
+				logs.LogInfo("Repository `%s` doesn't exist: create new repository URL", repositoryURL)
 			}
 
-			logs.LogInfo("Repository `%s` doesn't exist: create new repository URL", repositoryURL)
+			logs.LogError("Repository `%s` check unexpected error: %s", repositoryURL, err)
+
+			return err
 		}
 
 		var userRepo entities.UserRepository
 
 		query = tx.Where("user_id = ? AND repository_id = ?", user.ID, repository.ID)
 
-		if err := query.First(&userRepo).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			userRepo = entities.UserRepository{UserID: user.ID, RepositoryID: repository.ID}
-			if err := tx.Create(&userRepo).Error; err != nil {
-				logs.LogError("UserRepository `%d-%d` creation failure: %s", user.ID, repository.ID, err)
-				return err
+		if err := query.First(&userRepo).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				userRepo = entities.UserRepository{UserID: user.ID, RepositoryID: repository.ID}
+				if err := tx.Create(&userRepo).Error; err != nil {
+					logs.LogError("UserRepository `%d-%d` creation failure: %s", user.ID, repository.ID, err)
+					return err
+				}
+
+				logs.LogInfo("Subscribe user %d to %s", user.ID, repositoryURL)
 			}
 
-			logs.LogInfo("Subscribe user %d to %s", user.ID, repositoryURL)
+			logs.LogError("UserRepository `%d-%d` check unexpected error: %s", user.ID, repository.ID, err)
+
+			return err
 		}
 	}
 
@@ -159,9 +176,15 @@ func RemoveUserSubscription(
 
 		query := tx.Where("url = ?", repositoryURL)
 
-		if err := query.First(&repository).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.LogInfo("Repository `%s` doesn't exist", repositoryURL)
-			continue
+		if err := query.First(&repository).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				logs.LogInfo("Repository `%s` doesn't exist", repositoryURL)
+				continue
+			}
+
+			logs.LogWarn("Repository `%s` unexpected error", repositoryURL)
+
+			return err
 		}
 
 		var userRepo entities.UserRepository
