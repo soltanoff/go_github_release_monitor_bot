@@ -33,19 +33,22 @@ func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *en
 
 	if len(selectedRepository) == 0 {
 		return emptySubscriptions
-	} else {
-		answer.WriteString(subscriptionHeader)
-		for _, repository := range selectedRepository {
-			latestTag := fallbackTag
-			if repository.LatestTag != emptyString {
-				latestTag = repository.LatestTag
-			}
-			answer.WriteString(newLineTag)
-			answer.WriteString(latestTag)
-			answer.WriteString(delim)
-			answer.WriteString(repository.URL)
-		}
 	}
+
+	answer.WriteString(subscriptionHeader)
+
+	for _, repository := range selectedRepository {
+		latestTag := fallbackTag
+		if repository.LatestTag != emptyString {
+			latestTag = repository.LatestTag
+		}
+
+		answer.WriteString(newLineTag)
+		answer.WriteString(latestTag)
+		answer.WriteString(delim)
+		answer.WriteString(repository.URL)
+	}
+
 	return answer.String()
 }
 
