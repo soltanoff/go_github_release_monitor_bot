@@ -12,13 +12,18 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	dbConnectionFailedMessage string = "failed to connect database"
+	dbMigrationFailedMessage  string = "failed to migrate database schema"
+)
+
 var repoDBRefError = errors.New("WRONG DB POOL REFERENCE FROM CONTEXT") //nolint:all
 
 func InitDBConnection() *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 	if err != nil {
 		logs.LogError("DB connection error: %s", err.Error())
-		panic("failed to connect database")
+		panic(dbConnectionFailedMessage)
 	}
 
 	return db
@@ -29,7 +34,7 @@ func AutoMigrate(db *gorm.DB) {
 	// check error for panic
 	if err != nil {
 		logs.LogError("DB migration error: %s", err.Error())
-		panic("failed to migrate database schema")
+		panic(dbMigrationFailedMessage)
 	}
 }
 
@@ -54,11 +59,10 @@ func GetOrCreateUser(
 				logs.LogError("User `%d` creation failure: %s", userExternalID, err)
 				return user, err
 			}
+		} else {
+			logs.LogError("User `%d` unexpected error: %s", userExternalID, err)
+			return user, err
 		}
-
-		logs.LogError("User `%d` unexpected error: %s", userExternalID, err)
-
-		return user, err
 	}
 
 	return user, tx.Commit().Error
@@ -71,7 +75,7 @@ func GetAllUserSubscriptions(
 	db, ok := ctx.Value("db").(*gorm.DB)
 
 	if !ok {
-		return selectedRepository, repoDBRefError
+		return nil, repoDBRefError
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -118,13 +122,11 @@ func AddUserSubscription(
 					logs.LogError("Repository `%s` creation failure: %s", repositoryURL, err)
 					return err
 				}
-
 				logs.LogInfo("Repository `%s` doesn't exist: create new repository URL", repositoryURL)
+			} else {
+				logs.LogError("Repository `%s` check unexpected error: %s", repositoryURL, err)
+				return err
 			}
-
-			logs.LogError("Repository `%s` check unexpected error: %s", repositoryURL, err)
-
-			return err
 		}
 
 		var userRepo entities.UserRepository
@@ -140,11 +142,10 @@ func AddUserSubscription(
 				}
 
 				logs.LogInfo("Subscribe user %d to %s", user.ID, repositoryURL)
+			} else {
+				logs.LogError("UserRepository `%d-%d` check unexpected error: %s", user.ID, repository.ID, err)
+				return err
 			}
-
-			logs.LogError("UserRepository `%d-%d` check unexpected error: %s", user.ID, repository.ID, err)
-
-			return err
 		}
 	}
 
@@ -173,30 +174,23 @@ func RemoveUserSubscription(
 		}
 
 		var repository entities.Repository
-
 		query := tx.Where("url = ?", repositoryURL)
-
 		if err := query.First(&repository).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				logs.LogInfo("Repository `%s` doesn't exist", repositoryURL)
 				continue
 			}
-
 			logs.LogWarn("Repository `%s` unexpected error", repositoryURL)
-
 			return err
 		}
 
 		var userRepo entities.UserRepository
-
 		query = tx.Where("user_id = ? AND repository_id = ?", user.ID, repository.ID)
-
 		if query.First(&userRepo).Error == nil {
 			if err := tx.Unscoped().Delete(&userRepo).Error; err != nil {
 				logs.LogError("Unsubscribe user %d from %s error: %s", user.ID, repositoryURL, err)
 				return err
 			}
-
 			logs.LogInfo("Unsubscribe user %d from %s", user.ID, repositoryURL)
 		}
 	}
@@ -242,7 +236,7 @@ func GetAllRepositories(ctx context.Context) (repositories []entities.Repository
 	db, ok := ctx.Value("db").(*gorm.DB)
 
 	if !ok {
-		return repositories, repoDBRefError
+		return nil, repoDBRefError
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -286,7 +280,7 @@ func GetAllSubscribers(
 	db, ok := ctx.Value("db").(*gorm.DB)
 
 	if !ok {
-		return users, repoDBRefError
+		return nil, repoDBRefError
 	}
 
 	tx := db.Begin().WithContext(ctx)
