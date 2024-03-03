@@ -122,6 +122,7 @@ func AddUserSubscription(
 					logs.LogError("Repository `%s` creation failure: %s", repositoryURL, err)
 					return err
 				}
+
 				logs.LogInfo("Repository `%s` doesn't exist: create new repository URL", repositoryURL)
 			} else {
 				logs.LogError("Repository `%s` check unexpected error: %s", repositoryURL, err)
@@ -174,23 +175,30 @@ func RemoveUserSubscription(
 		}
 
 		var repository entities.Repository
+
 		query := tx.Where("url = ?", repositoryURL)
+
 		if err := query.First(&repository).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				logs.LogInfo("Repository `%s` doesn't exist", repositoryURL)
 				continue
 			}
+
 			logs.LogWarn("Repository `%s` unexpected error", repositoryURL)
+
 			return err
 		}
 
 		var userRepo entities.UserRepository
+
 		query = tx.Where("user_id = ? AND repository_id = ?", user.ID, repository.ID)
+
 		if query.First(&userRepo).Error == nil {
 			if err := tx.Unscoped().Delete(&userRepo).Error; err != nil {
 				logs.LogError("Unsubscribe user %d from %s error: %s", user.ID, repositoryURL, err)
 				return err
 			}
+
 			logs.LogInfo("Unsubscribe user %d from %s", user.ID, repositoryURL)
 		}
 	}
