@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-telegram/bot/models"
@@ -11,7 +10,17 @@ import (
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
-var errorMessage = "Some error caused, please try latter :("
+const (
+	errorMessage               string = "Some error caused, please try latter :("
+	emptySubscriptions         string = "Subscriptions: empty"
+	emptyString                string = ""
+	subscriptionHeader         string = "Subscriptions: "
+	fallbackTag                string = "fetch in progress"
+	newLineTag                 string = "\n"
+	delim                      string = " - "
+	successSubscribedMessage   string = "Successfully subscribed!"
+	successUnsubscribedMessage string = "Successfully unsubscribed!"
+)
 
 func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
 	selectedRepository, err := repo.GetAllUserSubscriptions(ctx, user)
@@ -23,18 +32,21 @@ func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *en
 	var answer strings.Builder
 
 	if len(selectedRepository) == 0 {
-		answer.WriteString("empty")
+		return emptySubscriptions
 	} else {
+		answer.WriteString(subscriptionHeader)
 		for _, repository := range selectedRepository {
-			latestTag := "fetch in progress"
-			if repository.LatestTag != "" {
+			latestTag := fallbackTag
+			if repository.LatestTag != emptyString {
 				latestTag = repository.LatestTag
 			}
-			answer.WriteString(fmt.Sprintf("\n%s - %s", latestTag, repository.URL))
+			answer.WriteString(newLineTag)
+			answer.WriteString(latestTag)
+			answer.WriteString(delim)
+			answer.WriteString(repository.URL)
 		}
 	}
-
-	return fmt.Sprintf("Subscriptions: %s", answer.String())
+	return answer.String()
 }
 
 func SubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
@@ -44,7 +56,7 @@ func SubscribeHandler(ctx context.Context, update *models.Update, user *entities
 		return errorMessage
 	}
 
-	return "Successfully subscribed!"
+	return successSubscribedMessage
 }
 
 func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
@@ -54,7 +66,7 @@ func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entiti
 		return errorMessage
 	}
 
-	return "Successfully unsubscribed!"
+	return successUnsubscribedMessage
 }
 
 func RemoveAllSubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
@@ -64,5 +76,5 @@ func RemoveAllSubscriptionsHandler(ctx context.Context, update *models.Update, u
 		return errorMessage
 	}
 
-	return "Successfully unsubscribed!"
+	return successUnsubscribedMessage
 }
