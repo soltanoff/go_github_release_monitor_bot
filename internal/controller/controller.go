@@ -10,7 +10,6 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
-	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
@@ -29,6 +28,7 @@ func New(telegramAPIKey string) BotController {
 	}
 
 	bc := BotController{bot: b}
+	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
 		"/start",
@@ -126,43 +126,6 @@ func (bc *BotController) registerHandler(
 	)
 
 	bc.commandList = append(bc.commandList, fmt.Sprintf("%s - %s", pattern, description))
-}
-
-func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePreview bool) bot.HandlerFunc {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		logs.LogBotIncommingMessage(update)
-
-		_, err := bc.bot.SendChatAction(ctx, &bot.SendChatActionParams{
-			ChatID: update.Message.Chat.ID,
-			Action: models.ChatActionTyping,
-		})
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		user, err := repo.GetOrCreateUser(ctx, update.Message.From.ID)
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		answer := handler(ctx, update, &user)
-
-		_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:             update.Message.Chat.ID,
-			Text:               answer,
-			ParseMode:          models.ParseModeHTML,
-			ReplyParameters:    &models.ReplyParameters{MessageID: update.Message.ID},
-			LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
-		})
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		logs.LogBotOutgoingMessage(update, answer)
-	}
 }
 
 func (bc *BotController) defaultHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
