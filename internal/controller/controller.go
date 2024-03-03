@@ -89,10 +89,10 @@ func (bc *BotController) SendMessage(
 	disableWebPagePreview bool,
 ) (err error) {
 	_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:                userExternalID,
-		Text:                  answer,
-		ParseMode:             models.ParseModeHTML,
-		DisableWebPagePreview: disableWebPagePreview,
+		ChatID:             userExternalID,
+		Text:               answer,
+		ParseMode:          models.ParseModeHTML,
+		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 	})
 
 	if err != nil {
@@ -150,11 +150,11 @@ func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePrevi
 		answer := handler(ctx, update, &user)
 
 		_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:                update.Message.Chat.ID,
-			Text:                  answer,
-			ParseMode:             models.ParseModeHTML,
-			ReplyToMessageID:      update.Message.ID,
-			DisableWebPagePreview: disableWebPagePreview,
+			ChatID:             update.Message.Chat.ID,
+			Text:               answer,
+			ParseMode:          models.ParseModeHTML,
+			ReplyParameters:    &models.ReplyParameters{MessageID: update.Message.ID},
+			LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 		})
 		if err != nil {
 			logs.LogBotErrorMessage(update, err)
