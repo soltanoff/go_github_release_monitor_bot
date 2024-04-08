@@ -20,6 +20,7 @@ const (
 var repoDBRefError = errors.New("WRONG DB POOL REFERENCE FROM CONTEXT") //nolint:all
 
 func InitDBConnection() *gorm.DB {
+	// gorm.Config{}: логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 	if err != nil {
 		logs.LogError("DB connection error: %s", err.Error())

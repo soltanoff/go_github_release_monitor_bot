@@ -21,6 +21,7 @@ type BotController struct {
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
 func New(telegramAPIKey string) BotController {
+	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
 		logs.LogError("Bot init error: %s", err.Error())
@@ -125,7 +126,12 @@ func (bc *BotController) registerHandler(
 		bc.handlerWrapper(handler, disableWebPagePreview),
 	)
 
-	bc.commandList = append(bc.commandList, fmt.Sprintf("%s - %s", pattern, description))
+	var answer strings.Builder
+
+	answer.WriteString(pattern)
+	answer.WriteString(" - ")
+	answer.WriteString(description)
+	bc.commandList = append(bc.commandList, answer.String())
 }
 
 func (bc *BotController) defaultHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
