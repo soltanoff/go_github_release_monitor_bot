@@ -17,7 +17,7 @@ const (
 	dbMigrationFailedMessage  string = "failed to migrate database schema"
 )
 
-var repoDBRefError = errors.New("WRONG DB POOL REFERENCE FROM CONTEXT") //nolint:all
+var errRepoDBRef = errors.New("WRONG DB POOL REFERENCE FROM CONTEXT")
 
 func InitDBConnection() *gorm.DB {
 	// gorm.Config{}: логгировать ошибку на самом высоком уровне и/или использовать свой logger?
@@ -43,10 +43,10 @@ func GetOrCreateUser(
 	ctx context.Context,
 	userExternalID int64,
 ) (user entities.User, err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return user, repoDBRefError
+		return user, errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -73,10 +73,10 @@ func GetAllUserSubscriptions(
 	ctx context.Context,
 	user *entities.User,
 ) (selectedRepository []entities.Repository, err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return nil, repoDBRefError
+		return nil, errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -95,10 +95,10 @@ func AddUserSubscription(
 	user *entities.User,
 	receivedMessage string,
 ) (err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return repoDBRefError
+		return errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -159,10 +159,10 @@ func RemoveUserSubscription(
 	user *entities.User,
 	receivedMessage string,
 ) (err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return repoDBRefError
+		return errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -211,10 +211,10 @@ func RemoveAllUserSubscriptions(
 	ctx context.Context,
 	user *entities.User,
 ) (err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return repoDBRefError
+		return errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -242,10 +242,10 @@ func RemoveAllUserSubscriptions(
 }
 
 func GetAllRepositories(ctx context.Context) (repositories []entities.Repository, err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return nil, repoDBRefError
+		return nil, errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -264,10 +264,10 @@ func UpdateRepository(
 	ctx context.Context,
 	repository *entities.Repository,
 ) (err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return repoDBRefError
+		return errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)
@@ -286,10 +286,10 @@ func GetAllSubscribers(
 	ctx context.Context,
 	repositoryID uint,
 ) (users []entities.User, err error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
+	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
 
 	if !ok {
-		return nil, repoDBRefError
+		return nil, errRepoDBRef
 	}
 
 	tx := db.Begin().WithContext(ctx)

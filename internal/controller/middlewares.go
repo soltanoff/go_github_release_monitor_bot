@@ -29,7 +29,7 @@ func (bc *BotController) writingActionMiddleware(next bot.HandlerFunc) bot.Handl
 }
 
 func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePreview bool) bot.HandlerFunc {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+	return func(ctx context.Context, _ *bot.Bot, update *models.Update) {
 		logs.LogBotIncommingMessage(update)
 
 		user, err := repo.GetOrCreateUser(ctx, update.Message.From.ID)

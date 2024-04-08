@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+type key int
+
+const DBContextKey key = iota
+
 var (
 	// DBName Base DB name.
 	DBName = "db.sqlite3"
