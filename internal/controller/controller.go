@@ -95,7 +95,6 @@ func (bc *BotController) SendMessage(
 		ParseMode:          models.ParseModeHTML,
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 	})
-
 	if err != nil {
 		return fmt.Errorf("send message failed: %w", err)
 	}
