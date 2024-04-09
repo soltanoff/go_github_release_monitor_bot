@@ -32,18 +32,6 @@ func New(telegramAPIKey string) BotController {
 	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
-		"/start",
-		"base command for user registration",
-		false,
-		bc.welcomeHandler,
-	)
-	bc.registerHandler(
-		"/help",
-		"view all commands",
-		false,
-		bc.welcomeHandler,
-	)
-	bc.registerHandler(
 		"/my_subscriptions",
 		"view all subscriptions",
 		true,
@@ -104,14 +92,6 @@ func (bc *BotController) SendMessage(
 	return nil
 }
 
-func (bc *BotController) getCommandList() string {
-	return strings.Join(bc.commandList, "\n")
-}
-
-func (bc *BotController) registerDefaultHandler() {
-	bot.WithDefaultHandler(bc.handlerWrapper(bc.defaultHandler, true))(bc.bot)
-}
-
 func (bc *BotController) registerHandler(
 	pattern string,
 	description string,
@@ -131,12 +111,4 @@ func (bc *BotController) registerHandler(
 	answer.WriteString(" - ")
 	answer.WriteString(description)
 	bc.commandList = append(bc.commandList, answer.String())
-}
-
-func (bc *BotController) defaultHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
-	return "Say /help"
-}
-
-func (bc *BotController) welcomeHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
-	return bc.getCommandList()
 }

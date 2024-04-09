@@ -25,7 +25,7 @@ func main() {
 
 	ctx = context.WithValue(ctx, config.DBContextKey, db.WithContext(ctx))
 
-	bc := controller.New(os.Getenv("TELEGRAM_API_KEY"))
+	bc := controller.New(config.TelegramAPIKey)
 	bc.Start(ctx, &wg)
 
 	monitor.Start(ctx, &wg, &bc)

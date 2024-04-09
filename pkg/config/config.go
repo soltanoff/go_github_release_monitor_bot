@@ -11,18 +11,24 @@ type key int
 const DBContextKey key = iota
 
 var (
-	// DBName Base DB name.
-	DBName = "db.sqlite3"
-	// SurveyPeriod Main timing config to prevent GitHub API limits.
+	TelegramAPIKey     = ""
 	SurveyPeriod       = time.Hour
 	FetchingStepPeriod = time.Minute
-	// GithubPattern RegExp pattern for checking user input.
-	GithubPattern = regexp.MustCompile(`^https://github\.com/([\w-]+/[\w-]+)$`)
+	GithubPattern      = regexp.MustCompile(`^https://github\.com/([\w-]+/[\w-]+)$`)
+)
+
+const (
+	DBName                string = "db.sqlite3"
+	envTelegramAPIKey     string = "TELEGRAM_API_KEY"
+	envSurveyPeriodKey    string = "SURVEY_PERIOD"
+	envFetchingStepPeriod string = "FETCHING_STEP_PERIOD"
 )
 
 func LoadConfigFromEnv() {
 	// Access environmental variables
-	surveyPeriodStr := os.Getenv("SURVEY_PERIOD")
+	TelegramAPIKey = os.Getenv(envTelegramAPIKey)
+
+	surveyPeriodStr := os.Getenv(envSurveyPeriodKey)
 	if surveyPeriodStr != "" {
 		surveyPeriodInt, err := time.ParseDuration(surveyPeriodStr)
 		if err == nil {
@@ -30,7 +36,7 @@ func LoadConfigFromEnv() {
 		}
 	}
 
-	fetchingStepPeriodStr := os.Getenv("FETCHING_STEP_PERIOD")
+	fetchingStepPeriodStr := os.Getenv(envFetchingStepPeriod)
 	if fetchingStepPeriodStr != "" {
 		fetchingStepPeriodInt, err := time.ParseDuration(fetchingStepPeriodStr)
 		if err == nil {
