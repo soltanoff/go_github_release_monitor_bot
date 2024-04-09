@@ -10,7 +10,6 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
-	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
@@ -22,6 +21,7 @@ type BotController struct {
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
 func New(telegramAPIKey string) BotController {
+	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
 		logs.LogError("Bot init error: %s", err.Error())
@@ -29,19 +29,8 @@ func New(telegramAPIKey string) BotController {
 	}
 
 	bc := BotController{bot: b}
+	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
-	bc.registerHandler(
-		"/start",
-		"base command for user registration",
-		false,
-		bc.welcomeHandler,
-	)
-	bc.registerHandler(
-		"/help",
-		"view all commands",
-		false,
-		bc.welcomeHandler,
-	)
 	bc.registerHandler(
 		"/my_subscriptions",
 		"view all subscriptions",
@@ -89,12 +78,11 @@ func (bc *BotController) SendMessage(
 	disableWebPagePreview bool,
 ) (err error) {
 	_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:                userExternalID,
-		Text:                  answer,
-		ParseMode:             models.ParseModeHTML,
-		DisableWebPagePreview: disableWebPagePreview,
+		ChatID:             userExternalID,
+		Text:               answer,
+		ParseMode:          models.ParseModeHTML,
+		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 	})
-
 	if err != nil {
 		return fmt.Errorf("send message failed: %w", err)
 	}
@@ -102,14 +90,6 @@ func (bc *BotController) SendMessage(
 	logs.LogInfo("<<< User %d: %s", userExternalID, answer)
 
 	return nil
-}
-
-func (bc *BotController) getCommandList() string {
-	return strings.Join(bc.commandList, "\n")
-}
-
-func (bc *BotController) registerDefaultHandler() {
-	bot.WithDefaultHandler(bc.handlerWrapper(bc.defaultHandler, true))(bc.bot)
 }
 
 func (bc *BotController) registerHandler(
@@ -125,50 +105,10 @@ func (bc *BotController) registerHandler(
 		bc.handlerWrapper(handler, disableWebPagePreview),
 	)
 
-	bc.commandList = append(bc.commandList, fmt.Sprintf("%s - %s", pattern, description))
-}
+	var answer strings.Builder
 
-func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePreview bool) bot.HandlerFunc {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		logs.LogBotIncommingMessage(update)
-
-		_, err := bc.bot.SendChatAction(ctx, &bot.SendChatActionParams{
-			ChatID: update.Message.Chat.ID,
-			Action: models.ChatActionTyping,
-		})
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		user, err := repo.GetOrCreateUser(ctx, update.Message.From.ID)
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		answer := handler(ctx, update, &user)
-
-		_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:                update.Message.Chat.ID,
-			Text:                  answer,
-			ParseMode:             models.ParseModeHTML,
-			ReplyToMessageID:      update.Message.ID,
-			DisableWebPagePreview: disableWebPagePreview,
-		})
-		if err != nil {
-			logs.LogBotErrorMessage(update, err)
-			return
-		}
-
-		logs.LogBotOutgoingMessage(update, answer)
-	}
-}
-
-func (bc *BotController) defaultHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
-	return "Say /help"
-}
-
-func (bc *BotController) welcomeHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
-	return bc.getCommandList()
+	answer.WriteString(pattern)
+	answer.WriteString(" - ")
+	answer.WriteString(description)
+	bc.commandList = append(bc.commandList, answer.String())
 }

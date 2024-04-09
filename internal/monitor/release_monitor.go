@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -114,10 +115,15 @@ func checkLastRepositoryTag(
 		return fmt.Errorf("get subscribers failed: %w", err)
 	}
 
-	answer := fmt.Sprintf("<b>Release tag</b>: %s", releaseInfo.SourceURL)
+	var answer strings.Builder
 
+	answer.WriteString("<b>Release tag</b>: ")
+	answer.WriteString(releaseInfo.SourceURL)
+
+	// Source: https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
+	// the API will not allow more than 30 messages per second or so
 	for _, user := range users {
-		err := botController.SendMessage(ctx, user.ExternalID, answer, false)
+		err := botController.SendMessage(ctx, user.ExternalID, answer.String(), false)
 		if err != nil {
 			logs.LogWarn("[%s] Sending to %d has error %s", repository.ShortName, user.ExternalID, err)
 		} else {

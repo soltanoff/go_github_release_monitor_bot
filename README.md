@@ -1,6 +1,6 @@
 # GitHub Release Monitor bot
 
-[![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-6.9-blue.svg?style=flat-square&logo=telegram)](https://core.telegram.org/bots/api)
+[![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-7.1-blue.svg?style=flat-square&logo=telegram)](https://core.telegram.org/bots/api)
 [![MIT License](https://img.shields.io/pypi/l/aiogram.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 Simple release monitor for GitHub repositories based on telegram bot.
@@ -21,9 +21,9 @@ You may try it on telegram - [here](http://t.me/github_release_monitor_bot) :)
 
 FYI: bot will send you info about updates automatically.
 
-![subscribe_example.jpg](assets%2Fsubscribe_example.jpg)
+![subscribe_example.jpg](assets/subscribe_example.jpg)
 
-![fetch_example.jpg](assets%2Ffetch_example.jpg)
+![fetch_example.jpg](assets/fetch_example.jpg)
 
 </details>
 
