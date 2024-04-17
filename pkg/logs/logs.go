@@ -21,7 +21,7 @@ func LogError(message string, args ...any) {
 
 func LogBotIncommingMessage(update *models.Update) {
 	LogInfo(
-		"User[%d|%d:@%s]: %s",
+		"[BOT] User[%d|%d:@%s]: %s",
 		update.Message.Chat.ID,
 		update.Message.From.ID,
 		update.Message.From.Username,
@@ -31,7 +31,7 @@ func LogBotIncommingMessage(update *models.Update) {
 
 func LogBotOutgoingMessage(update *models.Update, answer string) {
 	LogInfo(
-		"<<< User[%d|%d:@%s]: %s",
+		"[BOT] <<< User[%d|%d:@%s]: %s",
 		update.Message.Chat.ID,
 		update.Message.From.ID,
 		update.Message.From.Username,
@@ -41,7 +41,7 @@ func LogBotOutgoingMessage(update *models.Update, answer string) {
 
 func LogBotErrorMessage(update *models.Update, err error) {
 	LogError(
-		"User[%d|%d:@%s]: %s",
+		"[BOT] User[%d|%d:@%s]: %s",
 		update.Message.Chat.ID,
 		update.Message.From.ID,
 		update.Message.From.Username,

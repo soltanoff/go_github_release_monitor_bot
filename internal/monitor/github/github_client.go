@@ -39,14 +39,14 @@ func GetLatestTagFromReleaseURI(
 ) (releaseInfo ReleaseInfo, err error) {
 	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("Latest tag for release uri request failed: %s", err)
+		logs.LogError("[GITHUB-CLIENT] Latest tag for release uri request failed: %s", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		logs.LogError("Latest tag for release uri body decoder failed: %s", err)
-		return releaseInfo, fmt.Errorf("latest tag for release uri body decoder failed: %w", err)
+		logs.LogError("[GITHUB-CLIENT] Latest tag for release uri body decoder failed: %s", err)
+		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for release uri body decoder failed: %w", err)
 	}
 
 	return releaseInfo, nil
@@ -59,19 +59,19 @@ func GetLatestTagFromTagURI(
 ) (releaseInfo ReleaseInfo, err error) {
 	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("Latest tag for tag uri request failed: %s", err)
+		logs.LogError("[GITHUB-CLIENT] Latest tag for tag uri request failed: %s", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	var tagInfoList []TagInfo
 	if err := json.NewDecoder(resp.Body).Decode(&tagInfoList); err != nil {
-		logs.LogError("Latest tag for tag uri read body failed: %s", err)
-		return releaseInfo, fmt.Errorf("latest tag for tag uri read body failed: %w", err)
+		logs.LogError("[GITHUB-CLIENT] Latest tag for tag uri read body failed: %s", err)
+		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for tag uri read body failed: %w", err)
 	}
 
 	if len(tagInfoList) == 0 {
-		logs.LogWarn("Latest tag for tag uri request is empty")
+		logs.LogWarn("[GITHUB-CLIENT] Latest tag for tag uri request is empty")
 		return releaseInfo, nil
 	}
 
@@ -91,7 +91,7 @@ func GetLatestTagFromTagURI(
 func makeGetHTTPRequest(ctx context.Context, httpClient *http.Client, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("get-request failed: %w", err)
+		return nil, fmt.Errorf("[GITHUB-CLIENT] get-request failed: %w", err)
 	}
 
 	return httpClient.Do(req)

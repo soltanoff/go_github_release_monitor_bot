@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -20,12 +19,12 @@ type BotController struct {
 
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
-func New(telegramAPIKey string) BotController {
+func New(telegramAPIKey string) (*BotController, error) {
 	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
-		logs.LogError("Bot init error: %s", err.Error())
-		panic(err)
+		logs.LogError("[BOT] Bot init error: %s", err.Error())
+		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
 	bc := BotController{bot: b}
@@ -56,19 +55,13 @@ func New(telegramAPIKey string) BotController {
 		handlers.RemoveAllSubscriptionsHandler,
 	)
 
-	return bc
+	return &bc, nil
 }
 
-func (bc *BotController) Start(ctx context.Context, wg *sync.WaitGroup) {
-	logs.LogInfo("Starting bot...")
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		bc.bot.Start(ctx)
-		logs.LogInfo("Close bot controller...")
-	}()
+func (bc *BotController) Start(ctx context.Context) {
+	logs.LogInfo("[BOT] Starting bot...")
+	bc.bot.Start(ctx)
+	logs.LogInfo("[BOT] Close bot controller...")
 }
 
 func (bc *BotController) SendMessage(
@@ -84,10 +77,10 @@ func (bc *BotController) SendMessage(
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 	})
 	if err != nil {
-		return fmt.Errorf("send message failed: %w", err)
+		return fmt.Errorf("[BOT] send message failed: %w", err)
 	}
 
-	logs.LogInfo("<<< User %d: %s", userExternalID, answer)
+	logs.LogInfo("[BOT] <<< User %d: %s", userExternalID, answer)
 
 	return nil
 }
