@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/go-telegram/bot v1.2.1
+	golang.org/x/sync v0.7.0
 	gorm.io/driver/sqlite v1.5.5
 	gorm.io/gorm v1.25.9
 )
