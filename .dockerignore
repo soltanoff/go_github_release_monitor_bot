@@ -1,8 +1,9 @@
+# folders
 .idea
 .git
 .github
-.ci
 assets
+# files
 .dockerignore
 .env
 .env.default
@@ -10,5 +11,6 @@ assets
 .golangci.yml
 db.sqlite3
 docker-compose.yml
+Dockerfile
 Makefile
 README.md
