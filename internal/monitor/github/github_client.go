@@ -22,7 +22,7 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func New() *Client {
+func NewClient() *Client {
 	return &Client{httpClient: &http.Client{}}
 }
 

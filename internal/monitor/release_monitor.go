@@ -20,11 +20,11 @@ type ReleaseMonitor struct {
 	githubClient *github.Client
 }
 
-func New(
+func NewReleaseMonitor(
 	bc *controller.BotController,
 	repo *repo.Repository,
 ) *ReleaseMonitor {
-	return &ReleaseMonitor{bc: bc, repo: repo, githubClient: github.New()}
+	return &ReleaseMonitor{bc: bc, repo: repo, githubClient: github.NewClient()}
 }
 
 func (rm *ReleaseMonitor) Start(ctx context.Context) {

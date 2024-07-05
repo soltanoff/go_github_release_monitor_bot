@@ -17,7 +17,7 @@ type Repository struct {
 	db *gorm.DB
 }
 
-func New() (*Repository, error) {
+func NewRepository() (*Repository, error) {
 	// gorm.Config{}: логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 	if err != nil {

@@ -26,7 +26,7 @@ type SubscriptionsHandler struct {
 	repo *repo.Repository
 }
 
-func New(repo *repo.Repository) *SubscriptionsHandler {
+func NewSubscriptionsHandler(repo *repo.Repository) *SubscriptionsHandler {
 	return &SubscriptionsHandler{repo: repo}
 }
 

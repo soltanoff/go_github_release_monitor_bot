@@ -21,7 +21,7 @@ type BotController struct {
 
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
-func New(
+func NewBotController(
 	telegramAPIKey string,
 	repo *repo.Repository,
 ) (*BotController, error) {
@@ -32,7 +32,7 @@ func New(
 		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
-	subscriptionHandler := handlers.New(repo)
+	subscriptionHandler := handlers.NewSubscriptionsHandler(repo)
 
 	bc := BotController{bot: b, repo: repo, subscriptionHandler: subscriptionHandler}
 	bc.registerDefaultMiddlewares()

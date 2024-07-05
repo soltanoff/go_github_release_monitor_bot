@@ -24,7 +24,7 @@ func Run() error {
 
 	config.LoadConfigFromEnv()
 
-	repository, err := repo.New()
+	repository, err := repo.NewRepository()
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
@@ -34,7 +34,7 @@ func Run() error {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 
-	bc, err := controller.New(config.TelegramAPIKey, repository)
+	bc, err := controller.NewBotController(config.TelegramAPIKey, repository)
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
@@ -44,7 +44,7 @@ func Run() error {
 		return nil
 	})
 
-	releaseMonitor := monitor.New(bc, repository)
+	releaseMonitor := monitor.NewReleaseMonitor(bc, repository)
 
 	g.Go(func() error {
 		releaseMonitor.Start(ctx)
