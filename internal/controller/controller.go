@@ -9,17 +9,23 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 type BotController struct {
 	bot         *bot.Bot
+	repo        *repo.Repository
+	handler     *handlers.Handler
 	commandList []string
 }
 
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
-func New(telegramAPIKey string) (*BotController, error) {
+func New(
+	telegramAPIKey string,
+	repo *repo.Repository,
+) (*BotController, error) {
 	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
@@ -27,32 +33,34 @@ func New(telegramAPIKey string) (*BotController, error) {
 		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
-	bc := BotController{bot: b}
+	handler := handlers.New(repo)
+
+	bc := BotController{bot: b, repo: repo, handler: handler}
 	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
 		"/my_subscriptions",
 		"view all subscriptions",
 		true,
-		handlers.MySubscriptionsHandler,
+		handler.MySubscriptionsHandler,
 	)
 	bc.registerHandler(
 		"/subscribe",
 		"[github repo urls] subscribe to the new GitHub repository",
 		true,
-		handlers.SubscribeHandler,
+		handler.SubscribeHandler,
 	)
 	bc.registerHandler(
 		"/unsubscribe",
 		"[github repo urls] unsubscribe from the GitHub repository",
 		true,
-		handlers.UnsubscribeHandler,
+		handler.UnsubscribeHandler,
 	)
 	bc.registerHandler(
 		"/remove_all_subscriptions",
 		"remove all exists subscriptions",
 		true,
-		handlers.RemoveAllSubscriptionsHandler,
+		handler.RemoveAllSubscriptionsHandler,
 	)
 
 	return &bc, nil

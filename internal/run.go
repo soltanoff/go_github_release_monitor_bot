@@ -24,19 +24,17 @@ func Run() error {
 
 	config.LoadConfigFromEnv()
 
-	db, err := repo.NewDBConnection()
+	repository, err := repo.NewRepository()
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 
-	err = repo.AutoMigrate(db)
+	err = repository.AutoMigrate()
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 
-	ctx = context.WithValue(ctx, config.DBContextKey, db.WithContext(ctx))
-
-	bc, err := controller.New(config.TelegramAPIKey)
+	bc, err := controller.New(config.TelegramAPIKey, repository)
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
@@ -46,8 +44,10 @@ func Run() error {
 		return nil
 	})
 
+	releaseMonitor := monitor.New(repository, bc)
+
 	g.Go(func() error {
-		monitor.Start(ctx, bc)
+		releaseMonitor.Start(ctx)
 		return nil
 	})
 

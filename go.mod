@@ -3,10 +3,10 @@ module github.com/soltanoff/go_github_release_monitor_bot
 go 1.21
 
 require (
-	github.com/go-telegram/bot v1.2.1
+	github.com/go-telegram/bot v1.5.0
 	golang.org/x/sync v0.7.0
-	gorm.io/driver/sqlite v1.5.5
-	gorm.io/gorm v1.25.9
+	gorm.io/driver/sqlite v1.5.6
+	gorm.io/gorm v1.25.10
 )
 
 require (

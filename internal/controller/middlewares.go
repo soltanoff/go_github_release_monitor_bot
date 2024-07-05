@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
@@ -32,7 +31,7 @@ func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePrevi
 	return func(ctx context.Context, _ *bot.Bot, update *models.Update) {
 		logs.LogBotIncommingMessage(update)
 
-		user, err := repo.GetOrCreateUser(ctx, update.Message.From.ID)
+		user, err := bc.repo.GetOrCreateUser(ctx, update.Message.From.ID)
 		if err != nil {
 			logs.LogBotErrorMessage(update, err)
 			return

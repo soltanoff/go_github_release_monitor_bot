@@ -15,13 +15,25 @@ import (
 	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
-func Start(ctx context.Context, botController *controller.BotController) {
+type ReleaseMonitor struct {
+	repo *repo.Repository
+	bc   *controller.BotController
+}
+
+func New(
+	repo *repo.Repository,
+	bc *controller.BotController,
+) *ReleaseMonitor {
+	return &ReleaseMonitor{repo: repo, bc: bc}
+}
+
+func (rm *ReleaseMonitor) Start(ctx context.Context) {
 	logs.LogInfo("[GITHUB-MONITOR] Starting release monitor...")
-	runReleaseMonitor(ctx, botController)
+	rm.runReleaseMonitor(ctx)
 	logs.LogInfo("[GITHUB-MONITOR] Close release monitor...")
 }
 
-func runReleaseMonitor(ctx context.Context, botController *controller.BotController) {
+func (rm *ReleaseMonitor) runReleaseMonitor(ctx context.Context) {
 	ticker := time.NewTicker(config.SurveyPeriod)
 	defer ticker.Stop()
 
@@ -30,7 +42,7 @@ func runReleaseMonitor(ctx context.Context, botController *controller.BotControl
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			dataCollector(ctx, botController)
+			rm.dataCollector(ctx)
 			// we deliberately reset it, since we need to wait for the
 			// specified time from the moment the operation is completed
 			ticker.Reset(config.SurveyPeriod)
@@ -38,13 +50,13 @@ func runReleaseMonitor(ctx context.Context, botController *controller.BotControl
 	}
 }
 
-func dataCollector(ctx context.Context, botController *controller.BotController) {
+func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
 	ticker := time.NewTicker(config.FetchingStepPeriod)
 	defer ticker.Stop()
 
 	logs.LogInfo("[GITHUB-MONITOR] Start repos data collection")
 
-	repositories, err := repo.GetAllRepositories(ctx)
+	repositories, err := rm.repo.GetAllRepositories(ctx)
 	if err != nil {
 		logs.LogError("[GITHUB-MONITOR] Repositories selection unexpected error: %s", err)
 		return
@@ -60,7 +72,7 @@ func dataCollector(ctx context.Context, botController *controller.BotController)
 			logs.LogInfo("[GITHUB-MONITOR] Close data collector...")
 			return
 		case <-ticker.C:
-			err := checkLastRepositoryTag(ctx, botController, &httpClient, &repository)
+			err := rm.checkLastRepositoryTag(ctx, &httpClient, &repository)
 			if err != nil {
 				logs.LogError("[GITHUB-MONITOR] Data collection error caused for %s: %s", repository.ShortName, err)
 			}
@@ -73,9 +85,8 @@ func dataCollector(ctx context.Context, botController *controller.BotController)
 	logs.LogInfo("[GITHUB-MONITOR] Repos data collection is completed")
 }
 
-func checkLastRepositoryTag(
+func (rm *ReleaseMonitor) checkLastRepositoryTag(
 	ctx context.Context,
-	botController *controller.BotController,
 	httpClient *http.Client,
 	repository *entities.Repository,
 ) error {
@@ -98,11 +109,11 @@ func checkLastRepositoryTag(
 
 	repository.LatestTag = releaseInfo.TagName
 
-	if err := repo.UpdateRepository(ctx, repository); err != nil {
+	if err := rm.repo.UpdateRepository(ctx, repository); err != nil {
 		return fmt.Errorf("[GITHUB-MONITOR] failed to repository: %w", err)
 	}
 
-	users, err := repo.GetAllSubscribers(ctx, repository.ID)
+	users, err := rm.repo.GetAllSubscribers(ctx, repository.ID)
 	if err != nil {
 		logs.LogInfo("[GITHUB-MONITOR][%s] Get subscribers failed: %s", repository.ShortName, err)
 		return fmt.Errorf("[GITHUB-MONITOR] get subscribers failed: %w", err)
@@ -116,7 +127,7 @@ func checkLastRepositoryTag(
 	// Source: https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
 	// the API will not allow more than 30 messages per second or so
 	for _, user := range users {
-		err := botController.SendMessage(ctx, user.ExternalID, answer.String(), false)
+		err := rm.bc.SendMessage(ctx, user.ExternalID, answer.String(), false)
 		if err != nil {
 			logs.LogWarn("[GITHUB-MONITOR][%s] Sending to %d has error %s", repository.ShortName, user.ExternalID, err)
 		} else {

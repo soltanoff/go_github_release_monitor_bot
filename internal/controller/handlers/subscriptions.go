@@ -22,8 +22,20 @@ const (
 	successUnsubscribedMessage string = "Successfully unsubscribed!"
 )
 
-func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	selectedRepository, err := repo.GetAllUserSubscriptions(ctx, user)
+type Handler struct {
+	repo repo.Repository
+}
+
+func New(repo *repo.Repository) *Handler {
+	return &Handler{repo: *repo}
+}
+
+func (h *Handler) MySubscriptionsHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	selectedRepository, err := h.repo.GetAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -52,8 +64,12 @@ func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *en
 	return answer.String()
 }
 
-func SubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.AddUserSubscription(ctx, user, update.Message.Text)
+func (h *Handler) SubscribeHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.AddUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -62,8 +78,12 @@ func SubscribeHandler(ctx context.Context, update *models.Update, user *entities
 	return successSubscribedMessage
 }
 
-func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.RemoveUserSubscription(ctx, user, update.Message.Text)
+func (h *Handler) UnsubscribeHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.RemoveUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -72,8 +92,12 @@ func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entiti
 	return successUnsubscribedMessage
 }
 
-func RemoveAllSubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.RemoveAllUserSubscriptions(ctx, user)
+func (h *Handler) RemoveAllSubscriptionsHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.RemoveAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage

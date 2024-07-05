@@ -13,9 +13,11 @@ import (
 	"gorm.io/gorm"
 )
 
-var errRepoDBRef = errors.New("[DB] WRONG DB POOL REFERENCE FROM CONTEXT")
+type Repository struct {
+	db *gorm.DB
+}
 
-func NewDBConnection() (*gorm.DB, error) {
+func NewRepository() (*Repository, error) {
 	// gorm.Config{}: логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 	if err != nil {
@@ -23,11 +25,11 @@ func NewDBConnection() (*gorm.DB, error) {
 		return nil, fmt.Errorf("[DB] failed to connect database: %w", err)
 	}
 
-	return db, nil
+	return &Repository{db: db}, nil
 }
 
-func AutoMigrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&entities.User{}, &entities.Repository{}, &entities.UserRepository{})
+func (r *Repository) AutoMigrate() error {
+	err := r.db.AutoMigrate(&entities.User{}, &entities.Repository{}, &entities.UserRepository{})
 	// check error for panic
 	if err != nil {
 		logs.LogError("[DB] DB migration error: %s", err.Error())
@@ -37,17 +39,11 @@ func AutoMigrate(db *gorm.DB) error {
 	return nil
 }
 
-func GetOrCreateUser(
+func (r *Repository) GetOrCreateUser(
 	ctx context.Context,
 	userExternalID int64,
 ) (user entities.User, err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return user, errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -67,17 +63,11 @@ func GetOrCreateUser(
 	return user, tx.Commit().Error
 }
 
-func GetAllUserSubscriptions(
+func (r *Repository) GetAllUserSubscriptions(
 	ctx context.Context,
 	user *entities.User,
 ) (selectedRepository []entities.Repository, err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return nil, errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -88,18 +78,12 @@ func GetAllUserSubscriptions(
 	return selectedRepository, nil
 }
 
-func AddUserSubscription(
+func (r *Repository) AddUserSubscription(
 	ctx context.Context,
 	user *entities.User,
 	receivedMessage string,
 ) (err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -152,18 +136,12 @@ func AddUserSubscription(
 	return tx.Commit().Error
 }
 
-func RemoveUserSubscription(
+func (r *Repository) RemoveUserSubscription(
 	ctx context.Context,
 	user *entities.User,
 	receivedMessage string,
 ) (err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -205,17 +183,11 @@ func RemoveUserSubscription(
 	return tx.Commit().Error
 }
 
-func RemoveAllUserSubscriptions(
+func (r *Repository) RemoveAllUserSubscriptions(
 	ctx context.Context,
 	user *entities.User,
 ) (err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -239,14 +211,8 @@ func RemoveAllUserSubscriptions(
 	return tx.Commit().Error
 }
 
-func GetAllRepositories(ctx context.Context) (repositories []entities.Repository, err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return nil, errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+func (r *Repository) GetAllRepositories(ctx context.Context) (repositories []entities.Repository, err error) {
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -258,17 +224,11 @@ func GetAllRepositories(ctx context.Context) (repositories []entities.Repository
 	return repositories, nil
 }
 
-func UpdateRepository(
+func (r *Repository) UpdateRepository(
 	ctx context.Context,
 	repository *entities.Repository,
 ) (err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
@@ -280,17 +240,11 @@ func UpdateRepository(
 	return tx.Commit().Error
 }
 
-func GetAllSubscribers(
+func (r *Repository) GetAllSubscribers(
 	ctx context.Context,
 	repositoryID uint,
 ) (users []entities.User, err error) {
-	db, ok := ctx.Value(config.DBContextKey).(*gorm.DB)
-
-	if !ok {
-		return nil, errRepoDBRef
-	}
-
-	tx := db.Begin().WithContext(ctx)
+	tx := r.db.Begin().WithContext(ctx)
 
 	defer tx.Rollback()
 
