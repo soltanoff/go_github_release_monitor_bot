@@ -127,6 +127,7 @@ func (r *Repository) AddUserSubscription(
 						"repo", repository.ID,
 						"error", err,
 					)
+
 					return err
 				}
 
@@ -138,6 +139,7 @@ func (r *Repository) AddUserSubscription(
 					"repo", repository.ID,
 					"error", err,
 				)
+
 				return err
 			}
 		}
