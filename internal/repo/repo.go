@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/config"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/config"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -21,7 +21,7 @@ func New() (*Repository, error) {
 	// gorm.Config{}: логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 	if err != nil {
-		logs.LogError("[DB] DB connection error: %s", err.Error())
+		slog.Error("[DB] DB connection error", "error", err.Error())
 		return nil, fmt.Errorf("[DB] failed to connect database: %w", err)
 	}
 
@@ -32,7 +32,7 @@ func (r *Repository) AutoMigrate() error {
 	err := r.db.AutoMigrate(&entities.User{}, &entities.Repository{}, &entities.UserRepository{})
 	// check error for panic
 	if err != nil {
-		logs.LogError("[DB] DB migration error: %s", err.Error())
+		slog.Error("[DB] DB migration error", "error", err.Error())
 		return fmt.Errorf("[DB] failed to migrate database: %w", err)
 	}
 
@@ -51,11 +51,11 @@ func (r *Repository) GetOrCreateUser(
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			user = entities.User{ExternalID: userExternalID}
 			if err := tx.Create(&user).Error; err != nil {
-				logs.LogError("[DB] User `%d` creation failure: %s", userExternalID, err)
+				slog.Error("[DB] User creation failure", "senderID", userExternalID, "error", err)
 				return user, err
 			}
 		} else {
-			logs.LogError("[DB] User `%d` unexpected error: %s", userExternalID, err)
+			slog.Error("[DB] User creation unexpected error", "senderID", userExternalID, "error", err)
 			return user, err
 		}
 	}
@@ -90,7 +90,7 @@ func (r *Repository) AddUserSubscription(
 	for _, repositoryURL := range strings.Fields(receivedMessage) {
 		uriMatches := config.GithubPattern.FindStringSubmatch(repositoryURL)
 		if len(uriMatches) == 0 {
-			logs.LogWarn("[DB] Repository skipped by check: %s", repositoryURL)
+			slog.Warn("[DB] Repository skipped by check", "url", repositoryURL)
 			continue
 		}
 
@@ -102,13 +102,13 @@ func (r *Repository) AddUserSubscription(
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				repository = entities.Repository{URL: repositoryURL, ShortName: uriMatches[1]}
 				if err := tx.Create(&repository).Error; err != nil {
-					logs.LogError("[DB] Repository `%s` creation failure: %s", repositoryURL, err)
+					slog.Error("[DB] Repository creation failure", "url", repositoryURL, "error", err)
 					return err
 				}
 
-				logs.LogInfo("[DB] Repository `%s` doesn't exist: create new repository URL", repositoryURL)
+				slog.Info("[DB] Repository doesn't exist: create new repository URL", "url", repositoryURL)
 			} else {
-				logs.LogError("[DB] Repository `%s` check unexpected error: %s", repositoryURL, err)
+				slog.Error("[DB] Repository check unexpected error", "url", repositoryURL, "error", err)
 				return err
 			}
 		}
@@ -121,13 +121,23 @@ func (r *Repository) AddUserSubscription(
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				userRepo = entities.UserRepository{UserID: user.ID, RepositoryID: repository.ID}
 				if err := tx.Create(&userRepo).Error; err != nil {
-					logs.LogError("[DB] UserRepository `%d-%d` creation failure: %s", user.ID, repository.ID, err)
+					slog.Error(
+						"[DB] UserRepository creation failure",
+						"user", user.ID,
+						"repo", repository.ID,
+						"error", err,
+					)
 					return err
 				}
 
-				logs.LogInfo("[DB] Subscribe user %d to %s", user.ID, repositoryURL)
+				slog.Info("[DB] Subscribe user", "user", user.ID, "url", repositoryURL)
 			} else {
-				logs.LogError("[DB] UserRepository `%d-%d` check unexpected error: %s", user.ID, repository.ID, err)
+				slog.Error(
+					"[DB] UserRepository check unexpected error",
+					"user", user.ID,
+					"repo", repository.ID,
+					"error", err,
+				)
 				return err
 			}
 		}
@@ -147,7 +157,7 @@ func (r *Repository) RemoveUserSubscription(
 
 	for _, repositoryURL := range strings.Fields(receivedMessage) {
 		if !config.GithubPattern.MatchString(repositoryURL) {
-			logs.LogWarn("[DB] Repository skipped by check: %s", repositoryURL)
+			slog.Warn("[DB] Repository skipped by check", "url", repositoryURL)
 			continue
 		}
 
@@ -157,11 +167,11 @@ func (r *Repository) RemoveUserSubscription(
 
 		if err := query.First(&repository).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				logs.LogInfo("[DB] Repository `%s` doesn't exist", repositoryURL)
+				slog.Info("[DB] Repository doesn't exist", "url", repositoryURL)
 				continue
 			}
 
-			logs.LogWarn("[DB] Repository `%s` unexpected error", repositoryURL)
+			slog.Warn("[DB] Repository unexpected error", "url", repositoryURL)
 
 			return err
 		}
@@ -172,11 +182,11 @@ func (r *Repository) RemoveUserSubscription(
 
 		if query.First(&userRepo).Error == nil {
 			if err := tx.Unscoped().Delete(&userRepo).Error; err != nil {
-				logs.LogError("[DB] Unsubscribe user %d from %s error: %s", user.ID, repositoryURL, err)
+				slog.Error("[DB] Unsubscribe user error", "user", user.ID, "url", repositoryURL, "error", err)
 				return err
 			}
 
-			logs.LogInfo("[DB] Unsubscribe user %d from %s", user.ID, repositoryURL)
+			slog.Info("[DB] Unsubscribe user", "user", user.ID, "url", repositoryURL)
 		}
 	}
 
@@ -196,14 +206,14 @@ func (r *Repository) RemoveAllUserSubscriptions(
 	query := tx.Where("user_id = ?", user.ID)
 
 	if err := query.Find(&userRepos).Error; err != nil {
-		logs.LogError("[DB] UserRepository for userID=%d error: %s", user.ID, err)
+		slog.Error("[DB] UserRepository error", "user", user.ID, "error", err)
 		return err
 	}
 
 	for index := range userRepos {
 		userRepo := userRepos[index]
 		if err := tx.Unscoped().Delete(&userRepo).Error; err != nil {
-			logs.LogError("[DB] UserRepository %d removing failed: %s", userRepo.ID, err)
+			slog.Error("[DB] UserRepository removing failed", "userRepo", userRepo.ID, "error", err)
 			return err
 		}
 	}
@@ -217,7 +227,7 @@ func (r *Repository) GetAllRepositories(ctx context.Context) (repositories []ent
 	defer tx.Rollback()
 
 	if err := tx.Find(&repositories).Error; err != nil {
-		logs.LogError("[DB] Get all repositories failed: %s", err)
+		slog.Error("[DB] Get all repositories failed", "error", err)
 		return nil, err
 	}
 
@@ -233,7 +243,7 @@ func (r *Repository) UpdateRepository(
 	defer tx.Rollback()
 
 	if err := tx.Save(&repository).Error; err != nil {
-		logs.LogError("[DB] Repository update failed: %s", err)
+		slog.Error("[DB] Repository update failed", "error", err)
 		return err
 	}
 
@@ -250,7 +260,7 @@ func (r *Repository) GetAllSubscribers(
 
 	query := tx.Joins("JOIN user_repositories ur on ur.user_id = users.id")
 	if err := query.Where("ur.repository_id = ?", repositoryID).Find(&users).Error; err != nil {
-		logs.LogError("[DB] Get all subscribers failed: %s", err)
+		slog.Error("[DB] Get all subscribers failed", "error", err)
 		return nil, err
 	}
 

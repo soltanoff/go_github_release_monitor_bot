@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/logs"
 )
 
 func (bc *BotController) registerDefaultMiddlewares() {

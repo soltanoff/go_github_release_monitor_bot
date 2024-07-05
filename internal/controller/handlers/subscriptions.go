@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/go-telegram/bot/models"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/logs"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 const (

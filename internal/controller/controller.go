@@ -3,13 +3,13 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 type BotController struct {
@@ -28,7 +28,7 @@ func New(
 	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
-		logs.LogError("[BOT] Bot init error: %s", err.Error())
+		slog.Error("[BOT] Bot init error", "error", err.Error())
 		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
@@ -66,9 +66,9 @@ func New(
 }
 
 func (bc *BotController) Start(ctx context.Context) {
-	logs.LogInfo("[BOT] Starting bot...")
+	slog.Info("[BOT] Starting bot...")
 	bc.bot.Start(ctx)
-	logs.LogInfo("[BOT] Close bot controller...")
+	slog.Info("[BOT] Close bot controller...")
 }
 
 func (bc *BotController) SendMessage(
@@ -87,7 +87,7 @@ func (bc *BotController) SendMessage(
 		return fmt.Errorf("[BOT] send message failed: %w", err)
 	}
 
-	logs.LogInfo("[BOT] <<< User %d: %s", userExternalID, answer)
+	slog.Info("[BOT] <<< ", "receiverID", userExternalID, "answer", answer)
 
 	return nil
 }

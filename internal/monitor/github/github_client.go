@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"sort"
-
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 const (
@@ -33,13 +32,13 @@ func (c *Client) GetLatestTagFromReleaseURI(
 ) (releaseInfo ReleaseInfo, err error) {
 	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("[GITHUB-CLIENT] Latest tag for release uri request failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for release uri request failed", "error", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		logs.LogError("[GITHUB-CLIENT] Latest tag for release uri body decoder failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for release uri body decoder failed", "error", err)
 		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for release uri body decoder failed: %w", err)
 	}
 
@@ -52,19 +51,19 @@ func (c *Client) GetLatestTagFromTagURI(
 ) (releaseInfo ReleaseInfo, err error) {
 	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("[GITHUB-CLIENT] Latest tag for tag uri request failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for tag uri request failed", "error", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	var tagInfoList []TagInfo
 	if err := json.NewDecoder(resp.Body).Decode(&tagInfoList); err != nil {
-		logs.LogError("[GITHUB-CLIENT] Latest tag for tag uri read body failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for tag uri read body failed", "error", err)
 		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for tag uri read body failed: %w", err)
 	}
 
 	if len(tagInfoList) == 0 {
-		logs.LogWarn("[GITHUB-CLIENT] Latest tag for tag uri request is empty")
+		slog.Warn("[GITHUB-CLIENT] Latest tag for tag uri request is empty")
 		return releaseInfo, nil
 	}
 
