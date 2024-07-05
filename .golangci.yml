@@ -26,6 +26,9 @@ linters-settings:
     min-name-length: 3
     ignore-names:
       - err
+      - bc
+      - db
+      - g
     ignore-decls:
       - bc BotController
       - wg sync.WaitGroup

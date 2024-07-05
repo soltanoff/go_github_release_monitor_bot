@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-type key int
-
-const DBContextKey key = iota
-
 var (
 	TelegramAPIKey     = ""
 	SurveyPeriod       = time.Hour

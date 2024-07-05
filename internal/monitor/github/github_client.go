@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"sort"
-
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 const (
@@ -19,59 +18,52 @@ const (
 
 var tagURIPattern = regexp.MustCompile(`refs/tags/([\w\d\-\.]+)`)
 
-type ReleaseInfo struct {
-	TagName   string `json:"tag_name"`
-	SourceURL string `json:"html_url"`
+type Client struct {
+	httpClient *http.Client
 }
 
-func (r *ReleaseInfo) IsZero() bool {
-	return r.SourceURL == "" && r.TagName == ""
+func NewClient() *Client {
+	return &Client{httpClient: &http.Client{}}
 }
 
-type TagInfo struct {
-	Ref string `json:"ref"`
-}
-
-func GetLatestTagFromReleaseURI(
+func (c *Client) GetLatestTagFromReleaseURI(
 	ctx context.Context,
-	httpClient *http.Client,
 	repoShortName string,
 ) (releaseInfo ReleaseInfo, err error) {
-	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
+	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("Latest tag for release uri request failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for release uri request failed", "error", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		logs.LogError("Latest tag for release uri body decoder failed: %s", err)
-		return releaseInfo, fmt.Errorf("latest tag for release uri body decoder failed: %w", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for release uri body decoder failed", "error", err)
+		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for release uri body decoder failed: %w", err)
 	}
 
 	return releaseInfo, nil
 }
 
-func GetLatestTagFromTagURI(
+func (c *Client) GetLatestTagFromTagURI(
 	ctx context.Context,
-	httpClient *http.Client,
 	repoShortName string,
 ) (releaseInfo ReleaseInfo, err error) {
-	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
+	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
 	if err != nil {
-		logs.LogError("Latest tag for tag uri request failed: %s", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for tag uri request failed", "error", err)
 		return releaseInfo, nil
 	}
 	defer resp.Body.Close()
 
 	var tagInfoList []TagInfo
 	if err := json.NewDecoder(resp.Body).Decode(&tagInfoList); err != nil {
-		logs.LogError("Latest tag for tag uri read body failed: %s", err)
-		return releaseInfo, fmt.Errorf("latest tag for tag uri read body failed: %w", err)
+		slog.Error("[GITHUB-CLIENT] Latest tag for tag uri read body failed", "error", err)
+		return releaseInfo, fmt.Errorf("[GITHUB-CLIENT] latest tag for tag uri read body failed: %w", err)
 	}
 
 	if len(tagInfoList) == 0 {
-		logs.LogWarn("Latest tag for tag uri request is empty")
+		slog.Warn("[GITHUB-CLIENT] Latest tag for tag uri request is empty")
 		return releaseInfo, nil
 	}
 
@@ -88,10 +80,10 @@ func GetLatestTagFromTagURI(
 	return releaseInfo, nil
 }
 
-func makeGetHTTPRequest(ctx context.Context, httpClient *http.Client, url string) (*http.Response, error) {
+func (c *Client) makeGetHTTPRequest(ctx context.Context, httpClient *http.Client, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("get-request failed: %w", err)
+		return nil, fmt.Errorf("[GITHUB-CLIENT] get-request failed: %w", err)
 	}
 
 	return httpClient.Do(req)

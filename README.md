@@ -12,8 +12,8 @@ You may try it on telegram - [here](http://t.me/github_release_monitor_bot) :)
 - `/help` - view all commands
 - `/start` - base command for user registration
 - `/my_subscriptions` - view all subscriptions
-- `/subscribe` - \[github repo urls] subscribe to the new GitHub repository
-- `/unsubscribe` - \[github repo urls] unsubscribe from the GitHub repository
+- `/subscribe` - \[GitHub repo urls] subscribe to the new GitHub repository
+- `/unsubscribe` - \[GitHub repo urls] unsubscribe from the GitHub repository
 - `/remove_all_subscriptions` - remove all exists subscriptions
 
 <details><summary>Examples here</summary>
@@ -102,25 +102,38 @@ make format
 
 ## My subscriptions
 
-- https://github.com/python/cpython
-- https://github.com/encode/uvicorn
-- https://github.com/ultrajson/ultrajson
-- https://github.com/MagicStack/uvloop
-- https://github.com/python-greenlet/greenlet
-- https://github.com/aiogram/aiogram
-- https://github.com/aio-libs/aiohttp
-- https://github.com/tiangolo/fastapi
-- https://github.com/django/django
-- https://github.com/encode/django-rest-framework
-- https://github.com/redis/redis-py
 - https://github.com/sqlalchemy/sqlalchemy
-- https://github.com/sqlalchemy/alembic
-- https://github.com/pyca/cryptography
-- https://github.com/python-poetry/poetry
-- https://github.com/pytest-dev/pytest
-- https://github.com/nedbat/coveragepy
-- https://github.com/PyCQA/bandit
+- https://github.com/soltanoff/github_release_monitor_bot
+- https://github.com/python/cpython
 - https://github.com/pylint-dev/pylint
 - https://github.com/PyCQA/flake8
 - https://github.com/john-hen/Flake8-pyproject
 - https://github.com/pyupio/safety
+- https://github.com/python-greenlet/greenlet
+- https://github.com/aiogram/aiogram
+- https://github.com/python-poetry/poetry
+- https://github.com/sqlalchemy/alembic
+- https://github.com/ultrajson/ultrajson
+- https://github.com/MagicStack/uvloop
+- https://github.com/encode/uvicorn
+- https://github.com/tiangolo/fastapi
+- https://github.com/aio-libs/aiohttp
+- https://github.com/django/django
+- https://github.com/encode/django-rest-framework
+- https://github.com/pyca/cryptography
+- https://github.com/pytest-dev/pytest
+- https://github.com/nedbat/coveragepy
+- https://github.com/redis/redis-py
+- https://github.com/sparckles/robyn
+- https://github.com/PyCQA/bandit
+- https://github.com/litestar-org/litestar
+- https://github.com/jd/tenacity
+- https://github.com/aminalaee/sqladmin
+- https://github.com/wagtail/wagtail
+- https://github.com/zmievsa/cadwyn
+- https://github.com/litestar-org/litestar-pg-redis-docker
+- https://github.com/bigskysoftware/htmx
+- https://github.com/Bogdanp/dramatiq
+- https://github.com/jcrist/msgspec
+- https://github.com/ijl/orjson
+- https://github.com/PrefectHQ/prefect

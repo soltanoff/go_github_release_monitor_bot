@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/go-telegram/bot/models"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/logs"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
 )
 
 const (
@@ -22,8 +22,20 @@ const (
 	successUnsubscribedMessage string = "Successfully unsubscribed!"
 )
 
-func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	selectedRepository, err := repo.GetAllUserSubscriptions(ctx, user)
+type SubscriptionsHandler struct {
+	repo *repo.Repository
+}
+
+func NewSubscriptionsHandler(repo *repo.Repository) *SubscriptionsHandler {
+	return &SubscriptionsHandler{repo: repo}
+}
+
+func (h *SubscriptionsHandler) MySubscriptionsHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	selectedRepository, err := h.repo.GetAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -52,8 +64,12 @@ func MySubscriptionsHandler(ctx context.Context, update *models.Update, user *en
 	return answer.String()
 }
 
-func SubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.AddUserSubscription(ctx, user, update.Message.Text)
+func (h *SubscriptionsHandler) SubscribeHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.AddUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -62,8 +78,12 @@ func SubscribeHandler(ctx context.Context, update *models.Update, user *entities
 	return successSubscribedMessage
 }
 
-func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.RemoveUserSubscription(ctx, user, update.Message.Text)
+func (h *SubscriptionsHandler) UnsubscribeHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.RemoveUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage
@@ -72,8 +92,12 @@ func UnsubscribeHandler(ctx context.Context, update *models.Update, user *entiti
 	return successUnsubscribedMessage
 }
 
-func RemoveAllSubscriptionsHandler(ctx context.Context, update *models.Update, user *entities.User) string {
-	err := repo.RemoveAllUserSubscriptions(ctx, user)
+func (h *SubscriptionsHandler) RemoveAllSubscriptionsHandler(
+	ctx context.Context,
+	update *models.Update,
+	user *entities.User,
+) string {
+	err := h.repo.RemoveAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
 		return errorMessage

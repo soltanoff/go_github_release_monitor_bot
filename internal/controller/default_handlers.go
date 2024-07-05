@@ -9,10 +9,6 @@ import (
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
 )
 
-const (
-	helloMessage string = "Say /help"
-)
-
 func (bc *BotController) registerDefaultHandler() {
 	bot.WithDefaultHandler(bc.handlerWrapper(bc.defaultHandler, true))(bc.bot)
 	bc.registerHandler(
@@ -30,7 +26,7 @@ func (bc *BotController) registerDefaultHandler() {
 }
 
 func (bc *BotController) defaultHandler(_ context.Context, _ *models.Update, _ *entities.User) string {
-	return helloMessage
+	return "Say /help"
 }
 
 func (bc *BotController) welcomeHandler(_ context.Context, _ *models.Update, _ *entities.User) string {

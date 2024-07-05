@@ -3,72 +3,72 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
-	"sync"
+	"log/slog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
-	"github.com/soltanoff/go_github_release_monitor_bot/pkg/logs"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
 )
 
 type BotController struct {
-	bot         *bot.Bot
-	commandList []string
+	bot                 *bot.Bot
+	repo                *repo.Repository
+	subscriptionHandler *handlers.SubscriptionsHandler
+	commandList         []string
 }
 
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
-func New(telegramAPIKey string) BotController {
+func NewBotController(
+	telegramAPIKey string,
+	repo *repo.Repository,
+) (*BotController, error) {
 	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
 	b, err := bot.New(telegramAPIKey)
 	if err != nil {
-		logs.LogError("Bot init error: %s", err.Error())
-		panic(err)
+		slog.Error("[BOT] Bot init error", "error", err.Error())
+		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
-	bc := BotController{bot: b}
+	subscriptionHandler := handlers.NewSubscriptionsHandler(repo)
+
+	bc := BotController{bot: b, repo: repo, subscriptionHandler: subscriptionHandler}
 	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
 		"/my_subscriptions",
 		"view all subscriptions",
 		true,
-		handlers.MySubscriptionsHandler,
+		subscriptionHandler.MySubscriptionsHandler,
 	)
 	bc.registerHandler(
 		"/subscribe",
 		"[github repo urls] subscribe to the new GitHub repository",
 		true,
-		handlers.SubscribeHandler,
+		subscriptionHandler.SubscribeHandler,
 	)
 	bc.registerHandler(
 		"/unsubscribe",
 		"[github repo urls] unsubscribe from the GitHub repository",
 		true,
-		handlers.UnsubscribeHandler,
+		subscriptionHandler.UnsubscribeHandler,
 	)
 	bc.registerHandler(
 		"/remove_all_subscriptions",
 		"remove all exists subscriptions",
 		true,
-		handlers.RemoveAllSubscriptionsHandler,
+		subscriptionHandler.RemoveAllSubscriptionsHandler,
 	)
 
-	return bc
+	return &bc, nil
 }
 
-func (bc *BotController) Start(ctx context.Context, wg *sync.WaitGroup) {
-	logs.LogInfo("Starting bot...")
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		bc.bot.Start(ctx)
-		logs.LogInfo("Close bot controller...")
-	}()
+func (bc *BotController) Start(ctx context.Context) {
+	slog.Info("[BOT] Starting bot...")
+	bc.bot.Start(ctx)
+	slog.Info("[BOT] Close bot controller...")
 }
 
 func (bc *BotController) SendMessage(
@@ -84,31 +84,10 @@ func (bc *BotController) SendMessage(
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: &disableWebPagePreview},
 	})
 	if err != nil {
-		return fmt.Errorf("send message failed: %w", err)
+		return fmt.Errorf("[BOT] send message failed: %w", err)
 	}
 
-	logs.LogInfo("<<< User %d: %s", userExternalID, answer)
+	slog.Info("[BOT] <<< ", "receiverID", userExternalID, "answer", answer)
 
 	return nil
-}
-
-func (bc *BotController) registerHandler(
-	pattern string,
-	description string,
-	disableWebPagePreview bool,
-	handler HandlerFunc,
-) {
-	bc.bot.RegisterHandler(
-		bot.HandlerTypeMessageText,
-		pattern,
-		bot.MatchTypePrefix,
-		bc.handlerWrapper(handler, disableWebPagePreview),
-	)
-
-	var answer strings.Builder
-
-	answer.WriteString(pattern)
-	answer.WriteString(" - ")
-	answer.WriteString(description)
-	bc.commandList = append(bc.commandList, answer.String())
 }
