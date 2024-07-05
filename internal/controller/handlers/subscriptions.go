@@ -22,15 +22,15 @@ const (
 	successUnsubscribedMessage string = "Successfully unsubscribed!"
 )
 
-type Handler struct {
-	repo repo.Repository
+type SubscriptionsHandler struct {
+	repo *repo.Repository
 }
 
-func New(repo *repo.Repository) *Handler {
-	return &Handler{repo: *repo}
+func New(repo *repo.Repository) *SubscriptionsHandler {
+	return &SubscriptionsHandler{repo: repo}
 }
 
-func (h *Handler) MySubscriptionsHandler(
+func (h *SubscriptionsHandler) MySubscriptionsHandler(
 	ctx context.Context,
 	update *models.Update,
 	user *entities.User,
@@ -64,7 +64,7 @@ func (h *Handler) MySubscriptionsHandler(
 	return answer.String()
 }
 
-func (h *Handler) SubscribeHandler(
+func (h *SubscriptionsHandler) SubscribeHandler(
 	ctx context.Context,
 	update *models.Update,
 	user *entities.User,
@@ -78,7 +78,7 @@ func (h *Handler) SubscribeHandler(
 	return successSubscribedMessage
 }
 
-func (h *Handler) UnsubscribeHandler(
+func (h *SubscriptionsHandler) UnsubscribeHandler(
 	ctx context.Context,
 	update *models.Update,
 	user *entities.User,
@@ -92,7 +92,7 @@ func (h *Handler) UnsubscribeHandler(
 	return successUnsubscribedMessage
 }
 
-func (h *Handler) RemoveAllSubscriptionsHandler(
+func (h *SubscriptionsHandler) RemoveAllSubscriptionsHandler(
 	ctx context.Context,
 	update *models.Update,
 	user *entities.User,

@@ -24,7 +24,7 @@ func Run() error {
 
 	config.LoadConfigFromEnv()
 
-	repository, err := repo.NewRepository()
+	repository, err := repo.New()
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
@@ -44,7 +44,7 @@ func Run() error {
 		return nil
 	})
 
-	releaseMonitor := monitor.New(repository, bc)
+	releaseMonitor := monitor.New(bc, repository)
 
 	g.Go(func() error {
 		releaseMonitor.Start(ctx)

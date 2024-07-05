@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -16,15 +15,16 @@ import (
 )
 
 type ReleaseMonitor struct {
-	repo *repo.Repository
-	bc   *controller.BotController
+	bc           *controller.BotController
+	repo         *repo.Repository
+	githubClient *github.Client
 }
 
 func New(
-	repo *repo.Repository,
 	bc *controller.BotController,
+	repo *repo.Repository,
 ) *ReleaseMonitor {
-	return &ReleaseMonitor{repo: repo, bc: bc}
+	return &ReleaseMonitor{bc: bc, repo: repo, githubClient: github.New()}
 }
 
 func (rm *ReleaseMonitor) Start(ctx context.Context) {
@@ -62,8 +62,6 @@ func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
 		return
 	}
 
-	httpClient := http.Client{}
-
 	for index := range repositories {
 		repository := repositories[index]
 
@@ -72,7 +70,7 @@ func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
 			logs.LogInfo("[GITHUB-MONITOR] Close data collector...")
 			return
 		case <-ticker.C:
-			err := rm.checkLastRepositoryTag(ctx, &httpClient, &repository)
+			err := rm.checkLastRepositoryTag(ctx, &repository)
 			if err != nil {
 				logs.LogError("[GITHUB-MONITOR] Data collection error caused for %s: %s", repository.ShortName, err)
 			}
@@ -87,16 +85,15 @@ func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
 
 func (rm *ReleaseMonitor) checkLastRepositoryTag(
 	ctx context.Context,
-	httpClient *http.Client,
 	repository *entities.Repository,
 ) error {
-	releaseInfo, err := github.GetLatestTagFromReleaseURI(ctx, httpClient, repository.ShortName)
+	releaseInfo, err := rm.githubClient.GetLatestTagFromReleaseURI(ctx, repository.ShortName)
 	if err != nil {
 		return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repo: %w", err)
 	}
 
 	if releaseInfo.IsZero() {
-		releaseInfo, err = github.GetLatestTagFromTagURI(ctx, httpClient, repository.ShortName)
+		releaseInfo, err = rm.githubClient.GetLatestTagFromTagURI(ctx, repository.ShortName)
 		if err != nil {
 			return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repo: %w", err)
 		}

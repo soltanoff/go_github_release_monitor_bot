@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -14,10 +13,10 @@ import (
 )
 
 type BotController struct {
-	bot         *bot.Bot
-	repo        *repo.Repository
-	handler     *handlers.Handler
-	commandList []string
+	bot                 *bot.Bot
+	repo                *repo.Repository
+	subscriptionHandler *handlers.SubscriptionsHandler
+	commandList         []string
 }
 
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
@@ -33,34 +32,34 @@ func New(
 		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
-	handler := handlers.New(repo)
+	subscriptionHandler := handlers.New(repo)
 
-	bc := BotController{bot: b, repo: repo, handler: handler}
+	bc := BotController{bot: b, repo: repo, subscriptionHandler: subscriptionHandler}
 	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
 		"/my_subscriptions",
 		"view all subscriptions",
 		true,
-		handler.MySubscriptionsHandler,
+		subscriptionHandler.MySubscriptionsHandler,
 	)
 	bc.registerHandler(
 		"/subscribe",
 		"[github repo urls] subscribe to the new GitHub repository",
 		true,
-		handler.SubscribeHandler,
+		subscriptionHandler.SubscribeHandler,
 	)
 	bc.registerHandler(
 		"/unsubscribe",
 		"[github repo urls] unsubscribe from the GitHub repository",
 		true,
-		handler.UnsubscribeHandler,
+		subscriptionHandler.UnsubscribeHandler,
 	)
 	bc.registerHandler(
 		"/remove_all_subscriptions",
 		"remove all exists subscriptions",
 		true,
-		handler.RemoveAllSubscriptionsHandler,
+		subscriptionHandler.RemoveAllSubscriptionsHandler,
 	)
 
 	return &bc, nil
@@ -91,25 +90,4 @@ func (bc *BotController) SendMessage(
 	logs.LogInfo("[BOT] <<< User %d: %s", userExternalID, answer)
 
 	return nil
-}
-
-func (bc *BotController) registerHandler(
-	pattern string,
-	description string,
-	disableWebPagePreview bool,
-	handler HandlerFunc,
-) {
-	bc.bot.RegisterHandler(
-		bot.HandlerTypeMessageText,
-		pattern,
-		bot.MatchTypePrefix,
-		bc.handlerWrapper(handler, disableWebPagePreview),
-	)
-
-	var answer strings.Builder
-
-	answer.WriteString(pattern)
-	answer.WriteString(" - ")
-	answer.WriteString(description)
-	bc.commandList = append(bc.commandList, answer.String())
 }

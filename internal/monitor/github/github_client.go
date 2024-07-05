@@ -19,25 +19,19 @@ const (
 
 var tagURIPattern = regexp.MustCompile(`refs/tags/([\w\d\-\.]+)`)
 
-type ReleaseInfo struct {
-	TagName   string `json:"tag_name"`
-	SourceURL string `json:"html_url"`
+type Client struct {
+	httpClient *http.Client
 }
 
-func (r *ReleaseInfo) IsZero() bool {
-	return r.SourceURL == "" && r.TagName == ""
+func New() *Client {
+	return &Client{httpClient: &http.Client{}}
 }
 
-type TagInfo struct {
-	Ref string `json:"ref"`
-}
-
-func GetLatestTagFromReleaseURI(
+func (c *Client) GetLatestTagFromReleaseURI(
 	ctx context.Context,
-	httpClient *http.Client,
 	repoShortName string,
 ) (releaseInfo ReleaseInfo, err error) {
-	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
+	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(releaseURLMask, repoShortName))
 	if err != nil {
 		logs.LogError("[GITHUB-CLIENT] Latest tag for release uri request failed: %s", err)
 		return releaseInfo, nil
@@ -52,12 +46,11 @@ func GetLatestTagFromReleaseURI(
 	return releaseInfo, nil
 }
 
-func GetLatestTagFromTagURI(
+func (c *Client) GetLatestTagFromTagURI(
 	ctx context.Context,
-	httpClient *http.Client,
 	repoShortName string,
 ) (releaseInfo ReleaseInfo, err error) {
-	resp, err := makeGetHTTPRequest(ctx, httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
+	resp, err := c.makeGetHTTPRequest(ctx, c.httpClient, fmt.Sprintf(tagsURLMask, repoShortName))
 	if err != nil {
 		logs.LogError("[GITHUB-CLIENT] Latest tag for tag uri request failed: %s", err)
 		return releaseInfo, nil
@@ -88,7 +81,7 @@ func GetLatestTagFromTagURI(
 	return releaseInfo, nil
 }
 
-func makeGetHTTPRequest(ctx context.Context, httpClient *http.Client, url string) (*http.Response, error) {
+func (c *Client) makeGetHTTPRequest(ctx context.Context, httpClient *http.Client, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("[GITHUB-CLIENT] get-request failed: %w", err)
