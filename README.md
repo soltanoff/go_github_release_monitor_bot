@@ -1,6 +1,6 @@
 # GitHub Release Monitor bot
 
-[![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-8.0-blue.svg?style=flat-square&logo=telegram)](https://core.telegram.org/bots/api)
+[![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-8.3-blue.svg?style=flat-square&logo=telegram)](https://core.telegram.org/bots/api)
 [![MIT License](https://img.shields.io/pypi/l/aiogram.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 Simple release monitor for GitHub repositories based on telegram bot.
