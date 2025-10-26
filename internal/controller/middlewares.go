@@ -20,6 +20,7 @@ func (bc *BotController) writingActionMiddleware(next bot.HandlerFunc) bot.Handl
 		})
 		if err != nil {
 			logs.LogBotErrorMessage(update, err)
+
 			return
 		}
 

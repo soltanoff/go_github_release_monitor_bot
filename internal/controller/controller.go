@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/soltanoff/go_github_release_monitor_bot/internal/config"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/controller/handlers"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/entities"
 	"github.com/soltanoff/go_github_release_monitor_bot/internal/repo"
@@ -14,7 +15,7 @@ import (
 
 type BotController struct {
 	bot                 *bot.Bot
-	repo                *repo.Repository
+	repository          *repo.Repository
 	subscriptionHandler *handlers.SubscriptionsHandler
 	commandList         []string
 }
@@ -22,19 +23,20 @@ type BotController struct {
 type HandlerFunc func(ctx context.Context, update *models.Update, user *entities.User) string
 
 func NewBotController(
-	telegramAPIKey string,
-	repo *repo.Repository,
+	cfg *config.Config,
+	repository *repo.Repository,
 ) (*BotController, error) {
 	// bot.WithErrorsHandler(): логгировать ошибку на самом высоком уровне и/или использовать свой logger?
-	b, err := bot.New(telegramAPIKey)
+	b, err := bot.New(cfg.TelegramAPIKey)
 	if err != nil {
 		slog.Error("[BOT] Bot init error", "error", err.Error())
+
 		return nil, fmt.Errorf("[BOT] failed to connect Telegram API: %w", err)
 	}
 
-	subscriptionHandler := handlers.NewSubscriptionsHandler(repo)
+	subscriptionHandler := handlers.NewSubscriptionsHandler(repository)
 
-	bc := BotController{bot: b, repo: repo, subscriptionHandler: subscriptionHandler}
+	bc := BotController{bot: b, repository: repository, subscriptionHandler: subscriptionHandler}
 	bc.registerDefaultMiddlewares()
 	bc.registerDefaultHandler()
 	bc.registerHandler(
@@ -45,13 +47,13 @@ func NewBotController(
 	)
 	bc.registerHandler(
 		"/subscribe",
-		"[github repo urls] subscribe to the new GitHub repository",
+		"[github repository urls] subscribe to the new GitHub repository",
 		true,
 		subscriptionHandler.SubscribeHandler,
 	)
 	bc.registerHandler(
 		"/unsubscribe",
-		"[github repo urls] unsubscribe from the GitHub repository",
+		"[github repository urls] unsubscribe from the GitHub repository",
 		true,
 		subscriptionHandler.UnsubscribeHandler,
 	)
@@ -76,8 +78,8 @@ func (bc *BotController) SendMessage(
 	userExternalID int64,
 	answer string,
 	disableWebPagePreview bool,
-) (err error) {
-	_, err = bc.bot.SendMessage(ctx, &bot.SendMessageParams{
+) error {
+	_, err := bc.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:             userExternalID,
 		Text:               answer,
 		ParseMode:          models.ParseModeHTML,

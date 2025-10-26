@@ -23,11 +23,11 @@ const (
 )
 
 type SubscriptionsHandler struct {
-	repo *repo.Repository
+	repository *repo.Repository
 }
 
-func NewSubscriptionsHandler(repo *repo.Repository) *SubscriptionsHandler {
-	return &SubscriptionsHandler{repo: repo}
+func NewSubscriptionsHandler(repository *repo.Repository) *SubscriptionsHandler {
+	return &SubscriptionsHandler{repository: repository}
 }
 
 func (h *SubscriptionsHandler) MySubscriptionsHandler(
@@ -35,9 +35,10 @@ func (h *SubscriptionsHandler) MySubscriptionsHandler(
 	update *models.Update,
 	user *entities.User,
 ) string {
-	selectedRepository, err := h.repo.GetAllUserSubscriptions(ctx, user)
+	selectedRepository, err := h.repository.GetAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
+
 		return errorMessage
 	}
 
@@ -49,7 +50,9 @@ func (h *SubscriptionsHandler) MySubscriptionsHandler(
 
 	answer.WriteString(subscriptionHeader)
 
-	for _, repository := range selectedRepository {
+	for index := range selectedRepository {
+		repository := selectedRepository[index]
+
 		latestTag := fallbackTag
 		if repository.LatestTag != emptyString {
 			latestTag = repository.LatestTag
@@ -69,9 +72,10 @@ func (h *SubscriptionsHandler) SubscribeHandler(
 	update *models.Update,
 	user *entities.User,
 ) string {
-	err := h.repo.AddUserSubscription(ctx, user, update.Message.Text)
+	err := h.repository.AddUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
+
 		return errorMessage
 	}
 
@@ -83,9 +87,10 @@ func (h *SubscriptionsHandler) UnsubscribeHandler(
 	update *models.Update,
 	user *entities.User,
 ) string {
-	err := h.repo.RemoveUserSubscription(ctx, user, update.Message.Text)
+	err := h.repository.RemoveUserSubscription(ctx, user, update.Message.Text)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
+
 		return errorMessage
 	}
 
@@ -97,9 +102,10 @@ func (h *SubscriptionsHandler) RemoveAllSubscriptionsHandler(
 	update *models.Update,
 	user *entities.User,
 ) string {
-	err := h.repo.RemoveAllUserSubscriptions(ctx, user)
+	err := h.repository.RemoveAllUserSubscriptions(ctx, user)
 	if err != nil {
 		logs.LogBotErrorMessage(update, err)
+
 		return errorMessage
 	}
 
