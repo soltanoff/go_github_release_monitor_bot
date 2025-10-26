@@ -17,6 +17,6 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
-      - uses: actions/go-dependency-submission@v1
+      - uses: actions/go-dependency-submission@v2
         with:
           go-mod-path: go.mod
