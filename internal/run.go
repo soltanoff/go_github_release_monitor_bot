@@ -22,9 +22,12 @@ func Run() error {
 
 	defer cancel()
 
-	config.LoadConfigFromEnv()
+	cfg, err := config.LoadConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf("[RUNNER]: %w", err)
+	}
 
-	repository, err := repo.NewRepository()
+	repository, err := repo.NewRepository(cfg)
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
@@ -34,25 +37,28 @@ func Run() error {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 
-	bc, err := controller.NewBotController(config.TelegramAPIKey, repository)
+	bc, err := controller.NewBotController(cfg, repository)
 	if err != nil {
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 
 	g.Go(func() error {
 		bc.Start(ctx)
+
 		return nil
 	})
 
-	releaseMonitor := monitor.NewReleaseMonitor(bc, repository)
+	releaseMonitor := monitor.NewReleaseMonitor(cfg, bc, repository)
 
 	g.Go(func() error {
 		releaseMonitor.Start(ctx)
+
 		return nil
 	})
 
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("[RUNNER] Exited with error", "error", err)
+
 		return fmt.Errorf("[RUNNER]: %w", err)
 	}
 

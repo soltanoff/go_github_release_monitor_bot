@@ -1,42 +1,27 @@
 package config
 
 import (
-	"os"
+	"fmt"
 	"regexp"
 	"time"
+
+	"github.com/caarlos0/env/v11"
 )
 
-var (
-	TelegramAPIKey     = ""
-	SurveyPeriod       = time.Hour
-	FetchingStepPeriod = time.Minute
-	GithubPattern      = regexp.MustCompile(`^https://github\.com/([\w-]+/[\w-]+)$`)
-)
+var GithubPattern = regexp.MustCompile(`^https://github\.com/([\w-]+/[\w-]+)$`)
 
-const (
-	DBName                string = "db.sqlite3"
-	envTelegramAPIKey     string = "TELEGRAM_API_KEY"
-	envSurveyPeriodKey    string = "SURVEY_PERIOD"
-	envFetchingStepPeriod string = "FETCHING_STEP_PERIOD"
-)
+type Config struct {
+	TelegramAPIKey     string        `env:"TELEGRAM_API_KEY,required"`
+	SurveyPeriod       time.Duration `env:"SURVEY_PERIOD" envDefault:"3600s"`
+	FetchingStepPeriod time.Duration `env:"FETCHING_STEP_PERIOD" envDefault:"60s"`
+	DBName             string        `env:"DB_NAME" envDefault:"db.sqlite3"`
+}
 
-func LoadConfigFromEnv() {
-	// Access environmental variables
-	TelegramAPIKey = os.Getenv(envTelegramAPIKey)
-
-	surveyPeriodStr := os.Getenv(envSurveyPeriodKey)
-	if surveyPeriodStr != "" {
-		surveyPeriodInt, err := time.ParseDuration(surveyPeriodStr)
-		if err == nil {
-			SurveyPeriod = surveyPeriodInt
-		}
+func LoadConfigFromEnv() (*Config, error) {
+	cfg := &Config{}
+	if err := env.Parse(cfg); err != nil {
+		return nil, fmt.Errorf("config error: %w", err)
 	}
 
-	fetchingStepPeriodStr := os.Getenv(envFetchingStepPeriod)
-	if fetchingStepPeriodStr != "" {
-		fetchingStepPeriodInt, err := time.ParseDuration(fetchingStepPeriodStr)
-		if err == nil {
-			FetchingStepPeriod = fetchingStepPeriodInt
-		}
-	}
+	return cfg, nil
 }

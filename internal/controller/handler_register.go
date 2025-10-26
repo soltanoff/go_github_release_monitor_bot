@@ -13,9 +13,10 @@ func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePrevi
 	return func(ctx context.Context, _ *bot.Bot, update *models.Update) {
 		logs.LogBotIncomingMessage(update)
 
-		user, err := bc.repo.GetOrCreateUser(ctx, update.Message.From.ID)
+		user, err := bc.repository.GetOrCreateUser(ctx, update.Message.From.ID)
 		if err != nil {
 			logs.LogBotErrorMessage(update, err)
+
 			return
 		}
 
@@ -30,6 +31,7 @@ func (bc *BotController) handlerWrapper(handler HandlerFunc, disableWebPagePrevi
 		})
 		if err != nil {
 			logs.LogBotErrorMessage(update, err)
+
 			return
 		}
 

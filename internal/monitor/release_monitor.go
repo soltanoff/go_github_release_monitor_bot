@@ -15,16 +15,18 @@ import (
 )
 
 type ReleaseMonitor struct {
+	cfg          *config.Config
 	bc           *controller.BotController
-	repo         *repo.Repository
+	repository   *repo.Repository
 	githubClient *github.Client
 }
 
 func NewReleaseMonitor(
+	cfg *config.Config,
 	bc *controller.BotController,
-	repo *repo.Repository,
+	repository *repo.Repository,
 ) *ReleaseMonitor {
-	return &ReleaseMonitor{bc: bc, repo: repo, githubClient: github.NewClient()}
+	return &ReleaseMonitor{cfg: cfg, bc: bc, repository: repository, githubClient: github.NewClient()}
 }
 
 func (rm *ReleaseMonitor) Start(ctx context.Context) {
@@ -34,7 +36,7 @@ func (rm *ReleaseMonitor) Start(ctx context.Context) {
 }
 
 func (rm *ReleaseMonitor) runReleaseMonitor(ctx context.Context) {
-	ticker := time.NewTicker(config.SurveyPeriod)
+	ticker := time.NewTicker(rm.cfg.SurveyPeriod)
 	defer ticker.Stop()
 
 	for {
@@ -45,20 +47,21 @@ func (rm *ReleaseMonitor) runReleaseMonitor(ctx context.Context) {
 			rm.dataCollector(ctx)
 			// we deliberately reset it, since we need to wait for the
 			// specified time from the moment the operation is completed
-			ticker.Reset(config.SurveyPeriod)
+			ticker.Reset(rm.cfg.SurveyPeriod)
 		}
 	}
 }
 
 func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
-	ticker := time.NewTicker(config.FetchingStepPeriod)
+	ticker := time.NewTicker(rm.cfg.FetchingStepPeriod)
 	defer ticker.Stop()
 
 	slog.Info("[GITHUB-MONITOR] Start repos data collection")
 
-	repositories, err := rm.repo.GetAllRepositories(ctx)
+	repositories, err := rm.repository.GetAllRepositories(ctx)
 	if err != nil {
 		slog.Error("[GITHUB-MONITOR] Repositories selection unexpected error", "error", err)
+
 		return
 	}
 
@@ -68,19 +71,20 @@ func (rm *ReleaseMonitor) dataCollector(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			slog.Info("[GITHUB-MONITOR] Close data collector...")
+
 			return
 		case <-ticker.C:
 			err := rm.checkLastRepositoryTag(ctx, &repository)
 			if err != nil {
 				slog.Error(
 					"[GITHUB-MONITOR] Data collection error",
-					"repo", repository.ShortName,
+					"repository", repository.ShortName,
 					"error", err,
 				)
 			}
 			// we deliberately reset it, since we need to wait for the
 			// specified time from the moment the operation is completed
-			ticker.Reset(config.FetchingStepPeriod)
+			ticker.Reset(rm.cfg.FetchingStepPeriod)
 		}
 	}
 
@@ -93,30 +97,32 @@ func (rm *ReleaseMonitor) checkLastRepositoryTag(
 ) error {
 	releaseInfo, err := rm.githubClient.GetLatestTagFromReleaseURI(ctx, repository.ShortName)
 	if err != nil {
-		return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repo: %w", err)
+		return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repository: %w", err)
 	}
 
 	if releaseInfo.IsZero() {
 		releaseInfo, err = rm.githubClient.GetLatestTagFromTagURI(ctx, repository.ShortName)
 		if err != nil {
-			return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repo: %w", err)
+			return fmt.Errorf("[GITHUB-MONITOR] cannot get latest tag for repository: %w", err)
 		}
 	}
 
 	if repository.LatestTag == releaseInfo.TagName {
-		slog.Info("[GITHUB-MONITOR] Tag exists", "repo", repository.ShortName, "tag", releaseInfo.TagName)
+		slog.Info("[GITHUB-MONITOR] Tag exists", "repository", repository.ShortName, "tag", releaseInfo.TagName)
+
 		return nil
 	}
 
 	repository.LatestTag = releaseInfo.TagName
 
-	if err := rm.repo.UpdateRepository(ctx, repository); err != nil {
+	if err := rm.repository.UpdateRepository(ctx, repository); err != nil {
 		return fmt.Errorf("[GITHUB-MONITOR] failed to repository: %w", err)
 	}
 
-	users, err := rm.repo.GetAllSubscribers(ctx, repository.ID)
+	users, err := rm.repository.GetAllSubscribers(ctx, repository.ID)
 	if err != nil {
-		slog.Info("[GITHUB-MONITOR]Get subscribers failed", "repo", repository.ShortName, "error", err)
+		slog.Info("[GITHUB-MONITOR]Get subscribers failed", "repository", repository.ShortName, "error", err)
+
 		return fmt.Errorf("[GITHUB-MONITOR] get subscribers failed: %w", err)
 	}
 
@@ -132,14 +138,14 @@ func (rm *ReleaseMonitor) checkLastRepositoryTag(
 		if err != nil {
 			slog.Warn(
 				"[GITHUB-MONITOR] Send message failed",
-				"repo", repository.ShortName,
+				"repository", repository.ShortName,
 				"receiverID", user.ExternalID,
 				"error", err,
 			)
 		} else {
 			slog.Info(
 				"[GITHUB-MONITOR] Sending data to user",
-				"repo", repository.ShortName,
+				"repository", repository.ShortName,
 				"receiverID", user.ExternalID,
 			)
 		}
