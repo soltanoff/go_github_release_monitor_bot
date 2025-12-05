@@ -24,7 +24,7 @@ COPY . .
 
 RUN go install -ldflags='-s -w -extldflags "-static"' cmd/github-release-monitor-bot/main.go
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 COPY --from=builder /go/bin/main /usr/local/bin/main-app
 
